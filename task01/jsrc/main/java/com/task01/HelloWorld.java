@@ -24,15 +24,6 @@ public class HelloWorld implements RequestHandler<Object, Map<String, Object>> {
 		Map<String, String> bodyMap = new HashMap<>();
 		bodyMap.put("message", "Hello from Lambda");
 
-		try {
-			ObjectMapper objectMapper = new ObjectMapper();
-			String body = objectMapper.writeValueAsString(bodyMap);
-			resultMap.put("body", body);
-		} catch (Exception e) {
-			resultMap.put("statusCode", 500);
-			resultMap.put("body", "{\"message\":\"Internal Server Error\"}");
-		}
-
 		return resultMap;
 	}
 }
