@@ -20,10 +20,10 @@ import java.util.Map;
 @LambdaUrlConfig(
         authType = AuthType.NONE
 )
-public class HelloWorld implements RequestHandler<Map<String,Object>, String> {
+public class HelloWorld implements RequestHandler<Map<String,Object>, Map<String,Object>> {
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
-    public String handleRequest(Map<String, Object> request, Context context) {
+    public Map<String, Object> handleRequest(Map<String, Object> request, Context context) {
         LambdaLogger lambdaLogger = context.getLogger();
         lambdaLogger.log(request.toString());
 
@@ -31,20 +31,20 @@ public class HelloWorld implements RequestHandler<Map<String,Object>, String> {
         String method = (String) request.get("httpMethod");
 
         Map<String, Object> resultMap = new HashMap<>();
-        
+
         try {
             if ("/hello".equals(path) && "GET".equals(method)) {
                 resultMap.put("statusCode", 200);
                 Map<String, String> body = new HashMap<>();
                 body.put("statusCode", "200");
                 body.put("message", "Hello from Lambda");
-                resultMap.put("body", objectMapper.writeValueAsString(body));
+                resultMap.put("body", body);
             } else {
                 resultMap.put("statusCode", 400);
                 Map<String, String> body = new HashMap<>();
                 body.put("statusCode", "400");
                 body.put("message", "Bad request syntax or unsupported method. Request path: " + path + ". HTTP method: " + method);
-                resultMap.put("body", objectMapper.writeValueAsString(body));
+                resultMap.put("body", body);
             }
         } catch (Exception e) {
             lambdaLogger.log("Error: " + e.getMessage());
@@ -52,18 +52,9 @@ public class HelloWorld implements RequestHandler<Map<String,Object>, String> {
             Map<String, String> body = new HashMap<>();
             body.put("statusCode", "500");
             body.put("message", "Internal server error");
-            try {
-                resultMap.put("body", objectMapper.writeValueAsString(body));
-            } catch (Exception ex) {
-                lambdaLogger.log("Error: " + ex.getMessage());
-            }
+            resultMap.put("body", body);
         }
 
-        try {
-            return objectMapper.writeValueAsString(resultMap);
-        } catch (Exception e) {
-            lambdaLogger.log("Error: " + e.getMessage());
-            return "{\"statusCode\": 500, \"body\": \"Internal server error\"}";
-        }
+        return resultMap;
     }
 }
