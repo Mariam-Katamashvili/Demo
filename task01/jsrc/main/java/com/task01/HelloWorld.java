@@ -17,13 +17,9 @@ public class HelloWorld implements RequestHandler<Object, Map<String, Object>> {
 
 	public Map<String, Object> handleRequest(Object request, Context context) {
 		System.out.println("Hello from lambda");
-
 		Map<String, Object> resultMap = new HashMap<>();
 		resultMap.put("statusCode", 200);
-
-		Map<String, String> bodyMap = new HashMap<>();
-		bodyMap.put("message", "Hello from Lambda");
-
+		resultMap.put("message", "Hello from Lambda");
 		return resultMap;
 	}
 }
