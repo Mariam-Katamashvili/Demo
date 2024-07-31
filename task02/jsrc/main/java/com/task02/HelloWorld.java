@@ -1,7 +1,6 @@
 package com.task02;
 
 import com.amazonaws.services.lambda.runtime.Context;
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.syndicate.deployment.annotations.lambda.LambdaHandler;
@@ -9,52 +8,54 @@ import com.syndicate.deployment.annotations.lambda.LambdaUrlConfig;
 import com.syndicate.deployment.model.RetentionSetting;
 import com.syndicate.deployment.model.lambda.url.AuthType;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 @LambdaHandler(lambdaName = "hello_world",
-        roleName = "hello_world-role",
-        isPublishVersion = false,
-        logsExpiration = RetentionSetting.SYNDICATE_ALIASES_SPECIFIED
+	roleName = "hello_world-role",
+	isPublishVersion = false,
+	logsExpiration = RetentionSetting.SYNDICATE_ALIASES_SPECIFIED
 )
 @LambdaUrlConfig(
-        authType = AuthType.NONE
+		authType = AuthType.NONE
 )
-public class HelloWorld implements RequestHandler<Map<String,Object>, Map<String,Object>> {
-    private static final ObjectMapper objectMapper = new ObjectMapper();
+//public class HelloWorld implements RequestHandler<Object, Map<String, Object>> {
+//	public Map<String, Object> handleRequest(Object request, Context context) {
+//		LambdaLogger lambdaLogger = context.getLogger();
+//		lambdaLogger.log(request.toString());
+//		System.out.println("Hello from lambda");
+//		Map<String, Object> resultMap = new HashMap<String, Object>();
+//		resultMap.put("statusCode", 200);
+//		resultMap.put("body", "Hello from Lambda");
+//		return resultMap;
+//	}
+//}
 
-    public Map<String, Object> handleRequest(Map<String, Object> request, Context context) {
-        LambdaLogger lambdaLogger = context.getLogger();
-        lambdaLogger.log(request.toString());
+public class HelloWorld implements RequestHandler<Map<String, Object>, String> {
+	private final ObjectMapper objectMapper = new ObjectMapper();
+	@Override
+	public String handleRequest(Map<String, Object> request, Context context) {
+		Map<String, Object> response = new LinkedHashMap<>();
 
-        String path = (String) request.get("rawPath");
-        String method = (String) request.get("httpMethod");
+		Map<String, Object> requestContext = (Map<String, Object>) request.get("requestContext");
+		Map<String, Object> http = (Map<String, Object>) requestContext.get("http");
 
-        Map<String, Object> resultMap = new HashMap<>();
+		String httpMethod = (String) http.get("method");
+		String rawPath = (String) http.get("path");
 
-        try {
-            if ("/hello".equals(path) && "GET".equals(method)) {
-                resultMap.put("statusCode", 200);
-                Map<String, String> body = new HashMap<>();
-                body.put("statusCode", "200");
-                body.put("message", "Hello from Lambda");
-                resultMap.put("body", body);
-            } else {
-                resultMap.put("statusCode", 400);
-                Map<String, String> body = new HashMap<>();
-                body.put("statusCode", "400");
-                body.put("message", "Bad request syntax or unsupported method. Request path: " + path + ". HTTP method: " + method);
-                resultMap.put("body", body);
-            }
-        } catch (Exception e) {
-            lambdaLogger.log("Error: " + e.getMessage());
-            resultMap.put("statusCode", 500);
-            Map<String, String> body = new HashMap<>();
-            body.put("statusCode", "500");
-            body.put("message", "Internal server error");
-            resultMap.put("body", body);
-        }
+		if (httpMethod.equals("GET") && rawPath.equalsIgnoreCase("/hello")) {
+			response.put("statusCode", 200);
+			response.put("message", "Hello from Lambda");
+		} else {
+			response.put("statusCode", 400);
+			response.put("message", String.format("Bad request syntax or unsupported method. Request path: %s. HTTP method: %s", rawPath, httpMethod));
+		}
 
-        return resultMap;
-    }
+		try {
+			return objectMapper.writeValueAsString(response);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return "{\"statusCode\": 500, \"message\": \"Internal Server Error\"}";
+		}
+	}
 }
