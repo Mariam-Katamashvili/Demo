@@ -9,26 +9,19 @@ import java.util.HashMap;
 import java.util.Map;
 
 @LambdaHandler(
-		lambdaName = "api_handler",
-		roleName = "api_handler-role",
-		isPublishVersion = false, // Ensure no Lambda versions or aliases are used
-		logsExpiration = RetentionSetting.SYNDICATE_ALIASES_SPECIFIED
+    lambdaName = "api_handler",
+	roleName = "api_handler-role",
+	isPublishVersion = true,
+	aliasName = "${lambdas_alias_name}",
+	logsExpiration = RetentionSetting.SYNDICATE_ALIASES_SPECIFIED
 )
 public class ApiHandler implements RequestHandler<Object, Map<String, Object>> {
 
-	private final OpenMeteoClient openMeteoClient = new OpenMeteoClient();
-
-	@Override
-	public Map<String, Object> handleRequest(Object input, Context context) {
-		Map<String, Object> resultMap = new HashMap<>();
-		try {
-			String weatherData = openMeteoClient.getWeatherForecast();
-			resultMap.put("statusCode", 200);
-			resultMap.put("body", weatherData);
-		} catch (Exception e) {
-			resultMap.put("statusCode", 500);
-			resultMap.put("body", "Failed to fetch weather data: " + e.getMessage());
-		}
+	public Map<String, Object> handleRequest(Object request, Context context) {
+		System.out.println("Hello from lambda");
+		Map<String, Object> resultMap = new HashMap<String, Object>();
+		resultMap.put("statusCode", 200);
+		resultMap.put("body", "Hello from Lambda");
 		return resultMap;
 	}
 }
