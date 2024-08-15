@@ -16,9 +16,21 @@
     "dependencies" : [ ],
     "event_sources" : [ ],
     "env_variables" : { },
-    "publish_version" : true,
-    "alias" : "${lambdas_alias_name}",
+    "publish_version" : false,
+    "layers" : [ "lambda-layer" ],
     "logs_expiration" : "${logs_expiration}",
-    "snap_start" : "None"
+    "snap_start" : "None",
+    "url_config" : {
+      "auth_type" : "NONE",
+      "invoke_mode" : "BUFFERED"
+    }
+  },
+  "lambda-layer" : {
+    "name" : "lambda-layer",
+    "runtimes" : [ "java11" ],
+    "resource_type" : "lambda_layer",
+    "deployment_package" : "lambda-layer-assembly.zip",
+    "libraries" : [ "lib/task08-1.0.0.jar" ],
+    "architectures" : [ "arm64" ]
   }
 }
