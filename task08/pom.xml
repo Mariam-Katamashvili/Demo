@@ -38,7 +38,13 @@
             <version>20240303</version>
         </dependency>
         <!-- Custom jar file dependency -->
-
+        <dependency>
+            <groupId>com.example</groupId>
+            <artifactId>openmeteo-sdk</artifactId>
+            <version>1.0.0</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/lib/task08-1.0.0.jar</systemPath>
+        </dependency>
 
     </dependencies>
 
