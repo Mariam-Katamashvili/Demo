@@ -18,7 +18,6 @@
     "env_variables" : { },
     "publish_version" : false,
     "layers" : [ "lambda-layer" ],
-    "logs_expiration" : "${logs_expiration}",
     "snap_start" : "None",
     "url_config" : {
       "auth_type" : "NONE",

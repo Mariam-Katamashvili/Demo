@@ -9,18 +9,17 @@ import com.syndicate.deployment.annotations.lambda.LambdaUrlConfig;
 import com.syndicate.deployment.model.Architecture;
 import com.syndicate.deployment.model.ArtifactExtension;
 import com.syndicate.deployment.model.DeploymentRuntime;
-import com.syndicate.deployment.model.RetentionSetting;
 import com.syndicate.deployment.model.lambda.url.AuthType;
 import com.syndicate.deployment.model.lambda.url.InvokeMode;
-
-import java.util.HashMap;
-import java.util.Map;
 
 @LambdaHandler(
 		lambdaName = "api_handler",
 		roleName = "api_handler-role",
-		layers = {"lambda-layer"},
-		logsExpiration = RetentionSetting.SYNDICATE_ALIASES_SPECIFIED
+		layers = {"lambda-layer"}
+)
+@LambdaUrlConfig(
+		authType = AuthType.NONE,
+		invokeMode = InvokeMode.BUFFERED
 )
 @LambdaLayer(
 		layerName = "lambda-layer",
@@ -29,22 +28,20 @@ import java.util.Map;
 		architectures = {Architecture.ARM64},
 		artifactExtension = ArtifactExtension.ZIP
 )
-@LambdaUrlConfig(
-		authType = AuthType.NONE,
-		invokeMode = InvokeMode.BUFFERED
-)
-public class ApiHandler implements RequestHandler<Map<String, Object>, String> {
-	public String handleRequest(Map<String, Object> request, Context context) {
+public class ApiHandler implements RequestHandler<Object, String> {
+
+	@Override
+	public String handleRequest(Object request, Context context) {
 		LambdaLogger logger = context.getLogger();
 
-		logger.log("Request: " + request.toString());
-		WeatherClient client = new WeatherClient();
+		logger.log("Received request: " + request.toString());
+		WeatherForecastProvider weatherForecastProvider = new WeatherForecastProvider();
 		try {
-			String weatherForecast = client.getWeatherForecast();
-			logger.log("Weather forecast: " + weatherForecast);
-			return weatherForecast;
+			String forecast = weatherForecastProvider.getWeather();
+			logger.log("Retrieved weather forecast: " + forecast);
+			return forecast;
 		} catch (Exception e) {
-			logger.log("Error: " + e.getMessage());
+			logger.log("Error occurred: " + e.getMessage());
 			throw new RuntimeException(e);
 		}
 	}

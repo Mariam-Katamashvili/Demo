@@ -1,2 +1,2 @@
 com\task08\ApiHandler.class
-com\task08\WeatherClient.class
+com\task08\WeatherForecastProvider.class
