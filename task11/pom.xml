@@ -54,7 +54,7 @@
             <resource>
                 <directory>${resources.dir}</directory>
             </resource>
-        </resources>        
+        </resources>
         <plugins>
             <plugin>
                 <groupId>net.sf.aws-syndicate</groupId>
