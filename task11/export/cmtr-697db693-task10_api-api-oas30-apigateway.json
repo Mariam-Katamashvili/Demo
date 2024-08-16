@@ -1,19 +1,17 @@
 {
-  "openapi": "3.0.1",
-  "info": {
-    "title": "task11_api",
-    "version": "2024-08-16T15:42:18Z"
+  "openapi" : "3.0.1",
+  "info" : {
+    "title" : "cmtr-697db693-task10_api",
+    "version" : "2024-08-15T10:35:17Z"
   },
-  "servers": [
-    {
-      "url": "https://kszca8co93.execute-api.eu-central-1.amazonaws.com/{basePath}",
-      "variables": {
-        "basePath": {
-          "default": "api"
-        }
+  "servers" : [ {
+    "url" : "https://dohy6neej1.execute-api.eu-central-1.amazonaws.com/{basePath}",
+    "variables" : {
+      "basePath" : {
+        "default" : "api"
       }
     }
-  ],
+  } ],
   "paths": {
     "/reservations": {
       "get": {
