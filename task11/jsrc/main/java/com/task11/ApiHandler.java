@@ -17,7 +17,6 @@ import com.amazonaws.services.cognitoidp.model.UserPoolClientDescription;
 import com.amazonaws.services.cognitoidp.model.UserPoolDescriptionType;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
-import com.amazonaws.services.dynamodbv2.document.DynamoDB;
 import com.amazonaws.services.dynamodbv2.document.Item;
 import com.amazonaws.services.dynamodbv2.document.ItemUtils;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
@@ -33,7 +32,6 @@ import com.syndicate.deployment.annotations.lambda.LambdaHandler;
 import com.syndicate.deployment.annotations.lambda.LambdaUrlConfig;
 import com.syndicate.deployment.annotations.resources.DependsOn;
 import com.syndicate.deployment.model.ResourceType;
-import com.syndicate.deployment.model.RetentionSetting;
 import com.syndicate.deployment.model.lambda.url.AuthType;
 import com.syndicate.deployment.model.lambda.url.InvokeMode;
 import org.apache.commons.logging.Log;
@@ -53,9 +51,7 @@ import java.util.regex.Pattern;
 
 @LambdaHandler(
 		lambdaName = "api_handler",
-		roleName = "api_handler-role",
-		isPublishVersion = false,
-		logsExpiration = RetentionSetting.SYNDICATE_ALIASES_SPECIFIED
+		roleName = "api_handler-role"
 )
 @LambdaUrlConfig(
 		authType = AuthType.NONE,
@@ -75,7 +71,6 @@ import java.util.regex.Pattern;
 public class ApiHandler implements RequestHandler<Map<String, Object>, Map<String, Object>> {
 	private static final Log log = LogFactory.getLog(ApiHandler.class);
 	private final AmazonDynamoDB dynamoDBClient = AmazonDynamoDBClientBuilder.defaultClient();
-	private final DynamoDB dynamoDB = new DynamoDB(dynamoDBClient);
 	private final AWSCognitoIdentityProvider cognitoClient = AWSCognitoIdentityProviderClientBuilder.defaultClient();
 
 	public Map<String, Object> handleRequest(Map<String, Object> request, Context context) {
@@ -123,6 +118,13 @@ public class ApiHandler implements RequestHandler<Map<String, Object>, Map<Strin
 			responseMap.put("body", "Internal server error.");
 		}
 
+		Map<String, String> headers = new HashMap<>();
+		headers.put("Access-Control-Allow-Headers", "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token");
+		headers.put("Access-Control-Allow-Origin", "*");
+		headers.put("Access-Control-Allow-Methods", "*");
+		headers.put("Accept-Version", "*");
+		responseMap.put("headers", headers);
+
 		return responseMap;
 	}
 
@@ -136,12 +138,12 @@ public class ApiHandler implements RequestHandler<Map<String, Object>, Map<Strin
 			String email = String.valueOf(body.get("email"));
 			String password = String.valueOf(body.get("password"));
 
-			if (!validEmail(email)) {
+			if (invalidEmail(email)) {
 				logger.log("Email is invalid");
 				throw new Exception("Email is invalid");
 			}
 
-			if (!validPassword(password)) {
+			if (invalidPassword(password)) {
 				logger.log("Password is invalid");
 				throw new Exception("Password is invalid");
 			}
@@ -184,6 +186,7 @@ public class ApiHandler implements RequestHandler<Map<String, Object>, Map<Strin
 		return response;
 	}
 
+
 	private Map<String, Object> handleSignin(Map<String, Object> event, LambdaLogger logger) {
 		logger.log("SignIn process started.");
 		Map<String, Object> response = new HashMap<>();
@@ -194,20 +197,18 @@ public class ApiHandler implements RequestHandler<Map<String, Object>, Map<Strin
 
 			Map<String, Object> body = objectMapper.readValue((String) event.get("body"), Map.class);
 			logger.log("Parsed body from event: " + body.toString());
-
 			String email = String.valueOf(body.get("email"));
 			String password = String.valueOf(body.get("password"));
 			logger.log("Extracted email: " + email);
 			logger.log("Extracted password: " + password);
 
-
-			if (!validEmail(email)) {
+			if (invalidEmail(email)) {
 				logger.log("Email validation failed for: " + email);
 				throw new Exception("Email is invalid");
 			}
 			logger.log("Email validation passed for: " + email);
 
-			if (!validPassword(password)) {
+			if (invalidPassword(password)) {
 				logger.log("Password validation failed.");
 				throw new Exception("Password is invalid");
 			}
@@ -316,8 +317,9 @@ public class ApiHandler implements RequestHandler<Map<String, Object>, Map<Strin
 			logger.log("ScanResult: " + scanResult.toString());
 
 			Map<String, AttributeValue> table = null;
+
 			for (Map<String, AttributeValue> item : scanResult.getItems()) {
-				int existingId = Integer.parseInt(item.get("id").getS().trim().replaceAll("\"", ""));
+				int existingId = Integer.parseInt(item.get("id").getS().trim().replace("\"", ""));
 				int requiredId = Integer.parseInt(tableId.trim().replaceAll("\"", ""));
 				if (existingId == requiredId) {
 					table = item;
@@ -342,7 +344,6 @@ public class ApiHandler implements RequestHandler<Map<String, Object>, Map<Strin
 			response.put("statusCode", 400);
 			response.put("body", e.getMessage());
 		}
-
 		return response;
 	}
 
@@ -353,6 +354,7 @@ public class ApiHandler implements RequestHandler<Map<String, Object>, Map<Strin
 		AmazonDynamoDB ddb = AmazonDynamoDBClientBuilder.standard()
 				.withRegion(System.getenv("region"))
 				.build();
+
 		try {
 			Map<String, Object> body = objectMapper.readValue((String) event.get("body"), Map.class);
 			logger.log("Request body: " + body.toString());
@@ -458,7 +460,6 @@ public class ApiHandler implements RequestHandler<Map<String, Object>, Map<Strin
 			response.put("statusCode", 400);
 			response.put("body", ex.getMessage());
 		}
-
 		return response;
 	}
 
@@ -487,7 +488,6 @@ public class ApiHandler implements RequestHandler<Map<String, Object>, Map<Strin
 				return timeOverlap(slotTimeStart, slotTimeEnd, existingSlotTimeStart, existingSlotTimeEnd);
 			}
 		}
-
 		return false;
 	}
 
@@ -536,6 +536,7 @@ public class ApiHandler implements RequestHandler<Map<String, Object>, Map<Strin
 	}
 
 	private boolean timeOverlap(String slotTimeStart, String slotTimeEnd, String existingSlotTimeStart, String existingSlotTimeEnd) {
+
 		LocalTime start = LocalTime.parse(slotTimeStart);
 		LocalTime end = LocalTime.parse(slotTimeEnd);
 		LocalTime existingStart = LocalTime.parse(existingSlotTimeStart);
@@ -544,28 +545,28 @@ public class ApiHandler implements RequestHandler<Map<String, Object>, Map<Strin
 		return (start.isBefore(existingEnd) && end.isAfter(existingStart));
 	}
 
-	public static boolean validPassword(String password) {
+	public static boolean invalidPassword(String password) {
 		if (password == null) {
-			return false;
+			return true;
 		}
 
-		return password.length() >= 8 &&
-				password.length() <= 20 &&
-				password.matches(".*[A-Z].*") &&
-				password.matches(".*[a-z].*") &&
-				password.matches(".*\\d.*") &&
-				password.matches(".*[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>/?].*");
+		return password.length() < 8 ||
+				password.length() > 20 ||
+				!password.matches(".*[A-Z].*") ||
+				!password.matches(".*[a-z].*") ||
+				!password.matches(".*\\d.*") ||
+				!password.matches(".*[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>/?].*");
 	}
 
-	public static boolean validEmail(String email) {
+	public static boolean invalidEmail(String email) {
 		final String EMAIL_PATTERN = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,6}$";
 		final Pattern pattern = Pattern.compile(EMAIL_PATTERN);
 		if (email == null) {
-			return false;
+			return true;
 		}
 
 		Matcher matcher = pattern.matcher(email);
-		return matcher.matches();
+		return !matcher.matches();
 	}
 
 	public Optional<String> getUserPoolIdByName(String userPoolName) {
